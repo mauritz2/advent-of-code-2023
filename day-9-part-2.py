@@ -22,11 +22,11 @@ for row in data:
         all_rows.append(next_row)
         if all([num == 0 for num in next_row]):
             found_bottom_row = True
-    row_prediction = 0
+
+    all_rows.reverse()
+    current_row_prediction = 0 
     for row in all_rows:
-        print(row)
-        row_prediction += row[0]
-        print(row_prediction)
-    sum_of_prediction += row_prediction
+        current_row_prediction = row[0] - current_row_prediction
+    sum_of_prediction += current_row_prediction
 
 print(sum_of_prediction)

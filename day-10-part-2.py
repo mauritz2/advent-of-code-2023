@@ -113,7 +113,7 @@ for y_start, row_data in enumerate(data):
     for x_start, col_data in enumerate(row_data):
         if (y_start, x_start) in inside_locs:
             original_string = data[y_start]
-            new_string = original_string[:x_start] + "O" + original_string[x_start + 1:]
+            new_string = original_string[:x_start] + "X" + original_string[x_start + 1:]
             data[y_start] = new_string
                 
     print(data[y_start])

@@ -79,3 +79,4 @@ for p_l in potential_loops:
         max_distance_from_start =  math.ceil(len(loop_path) / 2)
         print(f"Max distance from start is {max_distance_from_start}")
         break
+

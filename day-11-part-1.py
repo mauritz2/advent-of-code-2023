@@ -1,10 +1,17 @@
 from itertools import combinations
 
+# Part 1
+# NUM_EXPANSION = 1
+
+# Part 2
+NUM_EXPANSION = 1000000
+
 def expand_rows(universe:list[list[str]]) -> list[list[str]]:
     row_to_expand = [i for i, col in enumerate(universe) if all(cell == "." for cell in col)]
     row_to_expand.reverse()
     for row_num in row_to_expand:
-        universe.insert(row_num, "." * len(universe[0]))
+        for _ in range(NUM_EXPANSION):
+            universe.insert(row_num, "." * len(universe[0]))
     return universe
 
 def expand_cols(universe:list[list[str]]) -> list[list[str]]:
@@ -30,11 +37,14 @@ def get_universe():
         data = f.readlines()
         data = [row.strip() for row in data]
         data = expand_rows(data)
+        print("Finished expanding rows")
         data = expand_cols(data)
+        print("Finished expanding cols")
     return data
 
 def get_shortest_distance(galaxy_pairs, galaxies):
     differences = 0
+    print("Starting distances")
     for g_1, g_2 in galaxy_pairs:
         g_1_loc = galaxies[g_1]
         g_2_loc = galaxies[g_2]
@@ -42,6 +52,7 @@ def get_shortest_distance(galaxy_pairs, galaxies):
         x_diff = abs(g_1_loc[1] - g_2_loc[1])
         total_diff = x_diff + y_diff
         differences += total_diff
+    print("Distances end")
     return differences
 
 def main():

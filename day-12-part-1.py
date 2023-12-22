@@ -8,7 +8,7 @@ with open("day-12-data.txt") as f:
 OPTIONS = ["#", "."]
 
 def calc_possible_arrangements(record:str, answer:list[int]):
-
+    print(re)
     def count_segments(s):
         return [len(seg) for seg in s.split('.') if seg]
 

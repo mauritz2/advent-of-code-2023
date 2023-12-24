@@ -1,56 +1,79 @@
-import heapq
+# By u/hextree
 
-def a_star(grid):
-    def heuristic(a, b):
-        # Manhattan distance on a square grid
-        return abs(b[0] - a[0]) + abs(b[1] - a[1])
+from dataclasses import dataclass
+from queue import PriorityQueue
 
-    def neighbors(node):
-        dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]]
-        result = []
-        for d in dirs:
-            nx, ny = node[0] + d[0], node[1] + d[1]
-            if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
-                result.append((nx, ny))
-        return result
+grid = []
+with open('inputs/17.txt', 'r') as f:
+    for line in f.readlines():
+        grid.append(tuple(map(int, line.strip())))
+n, m = len(grid), len(grid[0])
+print(n, m)
 
-    start, goal = (0, 0), (len(grid)-1, len(grid[0])-1)
-    frontier = [(0, start)]
-    came_from = {start: None}
-    cost_so_far = {start: 0}
+@dataclass(frozen=True)
+class Pos:
+    row: int
+    col: int
+    def __add__(self, other):
+        return Pos(row=self.row + other.row, col=self.col + other.col)
+    def __sub__(self, other):
+        return Pos(row=self.row - other.row, col=self.col - other.col)
+    def __neg__(self):
+        return Pos(row=-self.row, col=-self.col)
+    def __lt__(self, other):
+        return True
+    def dist(self, other):
+        # manhattan
+        return abs(self.row - other.row) + abs(self.col - other.col)
 
-    while frontier:
-        # current_cost intentionally not used - used to retrieve the next most promising node, but not used afterwards
-        current_cost, current = heapq.heappop(frontier)
-        if current == goal:
-            break
+# state described as (position, direction, chain length)
+start_state = (Pos(0, 0), None, 1)
+goal_pos = Pos(n-1, m-1)
 
-        for next in neighbors(current):
-            new_cost = cost_so_far[current] + grid[next[0]][next[1]]
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
-                cost_so_far[next] = new_cost
-                # Add heurisstic to penalize paths that go further away from the end
-                priority = new_cost + heuristic(goal, next)
-                heapq.heappush(frontier, (priority, next))
-                came_from[next] = current
+def a_star(start_state, goal_pos, min_chain_before_turn, max_chain):
+    def h(state):
+        # heuristic uses manhattan distance
+        return state[0].dist(goal_pos)
 
-    # Reconstruct path
-    current = goal
-    path = []
-    heat_loss = 0
-    while current != start:
-        path.append(current)
-        heat_loss += grid[current[1]][current[0]]
-        current = came_from[current]
-    path.append(start)
-    path.reverse()
+    def get_nbrs(state):
+        pos, direction, chain_length = state
+        for delta in (Pos(1, 0), Pos(0, 1), Pos(-1, 0), Pos(0, -1)):
+            if direction is not None:
+                if delta == -direction:
+                    continue
+                if delta == direction and chain_length == max_chain:
+                    continue
+                if delta not in (-direction, direction) and chain_length < min_chain_before_turn:
+                    continue
+            new_pos = pos + delta
+            if not (0 <= new_pos.row < n and 0 <= new_pos.col < m):
+                continue
+            new_direction = delta
+            if new_direction != direction:
+                new_chain_length = 1
+            else:
+                new_chain_length = chain_length + 1
+            yield new_pos, new_direction, new_chain_length
 
-    return path, heat_loss
+    q = PriorityQueue()
+    dist = {start_state: 0}
+    q.put((dist[start_state] + h(start_state), start_state))
 
+    while not q.empty():
+        f_dist, current_state = q.get()
+        if current_state[0] == goal_pos and current_state[2] >= min_chain_before_turn:
+            return dist[current_state]
+        if f_dist > dist[current_state] + h(current_state):
+            continue
+        for nbr_state in get_nbrs(current_state):
+            g_dist = dist[current_state] + grid[nbr_state[0].row][nbr_state[0].col]
+            if nbr_state in dist and dist[nbr_state] <= g_dist:
+                continue
+            dist[nbr_state] = g_dist
+            q.put((dist[nbr_state] + h(nbr_state), nbr_state))
 
-with open("inputs/17.txt") as f:
-    grid = [[int(num) for num in row.strip()] for row in f.readlines()]
+# part 1
+print(a_star(start_state, goal_pos, 0, 3))
 
-path, heat_loss = a_star(grid)
-print(path)
-print(heat_loss)
+# part 2
+print(a_star(start_state, goal_pos, 4, 10))

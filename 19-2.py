@@ -1,132 +1,146 @@
-import copy
-from functools import reduce
+#!/bin/python3
 
-# Min inclusive, max exclusive
-# Max amount of combos: 256,000,000,000,000
-default_part_range = {
-    "x":[1, 4000],
-    "m":[1, 4000],
-    "a":[1, 4000],
-    "s":[1, 4000]
-    }
+from copy import deepcopy
+import sys
+from typing import List
 
-def parse_instruction(instruction):
-    parsed_operations = []
-    operation_start = instruction.find("{")
-    name = instruction[:operation_start]
+FILE = sys.argv[1] if len(sys.argv) > 1 else "inputs/19.txt"
 
-    operations = instruction[operation_start + 1:-1].split(",")
-    default_outcome = operations[-1]
-    for operation in operations[:-1]:
-        o, r = operation.split(":")
-        parsed_operations.append((o, r))
-    parsed_operations.append(("True", default_outcome))
-    return name, parsed_operations
 
-passing_ranges = []
-def append_passing_ranges(part_range, instruction_name, instructions):
-        if instruction_name == "R":
-            return
-        elif instruction_name == "A":
-            passing_ranges.append(part_range)
-            return 
+def read_lines_to_list() -> List[str]:
+    lines: List[str] = []
 
-        instruction = instructions[instruction_name]
-        passing_part_range = copy.deepcopy(part_range)
-        failing_part_range = copy.deepcopy(part_range)
+    with open(FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            lines.append(line)
 
-        for operation in instruction:
-            if operation[0] == "True":
-                append_passing_ranges(part_range, operation[1], instructions)
-                break
+    return lines
 
-            attribute = operation[0][0]
-            operation_sign = operation[0][1]
-            if operation_sign == ">":
-                new_min = int(operation[0][2:])
-                if part_range[attribute][0] < new_min:
-                    if new_min < part_range[attribute][1]:
-                        passing_part_range[attribute][0] = new_min + 1
-                        failing_part_range[attribute][1] = new_min
-                    else:
-                        passing_part_range[attribute][0] = 0
-                        passing_part_range[attribute][1] = 0
 
-            if operation_sign == "<":
-                new_max = int(operation[0][2:])
-                if part_range[attribute][1] > new_max:
-                    if part_range[attribute][0] < new_max:
-                        passing_part_range[attribute][1] = new_max - 1
-                        failing_part_range[attribute][0] = new_max
-                    else:
-                        passing_part_range[attribute][0] = 0
-                        passing_part_range[attribute][1] = 0
-                        #passing_part_range[attribute][0] = 0
-            
-
-            assert passing_part_range[attribute][0] <= passing_part_range[attribute][1]
-            assert failing_part_range[attribute][0] <= failing_part_range[attribute][1]
-            # The part that passes the operation --> Change the instruction
-            part_range = failing_part_range
-            append_passing_ranges(passing_part_range, operation[1], instructions)
-            #get_passing_parts(failing_part_range, operation)
-        #print(original_part_range)           
-        #print(passing_part_range)           
-        #print(failing_part_range)           
-        #get_passing_parts(part_range) 
-def get_instructions(raw_instructions):
+def parse(lines):
     instructions = {}
-    for i in raw_instructions.split("\n"):
-        name, operations = parse_instruction(i)
-        instructions[name] = operations
-    return instructions
+    ratings = []
+    is_ratings = False
+    for line in lines:
+        if len(line) == 0:
+            is_ratings = True
+            continue
 
-def test_1():
-    data ="""\
-in{s<1351:px,qqz}
-px{a<2006:A,R}
-qqz{s>2770:R,R}"""
-    instructions = get_instructions(data)
-    append_passing_ranges(default_part_range, "in", instructions)
-    assert passing_ranges == [{'x': [1, 4000], 'm': [1, 4000], 'a': [1, 2005], 's': [1, 1350]}]
+        if not is_ratings:
+            l = line.split("{")
+            name = l[0]
+            parts = [part.split(":") for part in l[1][:-1].split(",")]
+            parts = [
+                [(part[0][0], part[0][1], int(part[0][2:])), part[1]]
+                if len(part) == 2
+                else part
+                for part in parts
+            ]
+            instructions[name] = parts
+        else:
+            l = [a.split("=") for a in line[1:-1].split(",")]
+            l = dict((k, int(v)) for [k, v] in l)
+            ratings.append(l)
 
-def test_2():
-    data ="""\
-in{s<1351:px,qqz}
-px{a<2006:A,R}
-qqz{s>2770:A,R}"""
-    instructions = get_instructions(data)
-    append_passing_ranges(default_part_range, "in", instructions)
-    assert passing_ranges == [{'x': [1, 4000], 'm': [1, 4000], 'a': [1, 2005], 's': [1, 1350]}, {'x': [1, 4000], 'm': [1, 4000], 'a': [1, 4000], 's': [2771, 4000]}]
-
-def test_3():
-    data ="""\
-in{s<1351:A,A}"""
-    instructions = get_instructions(data)
-    append_passing_ranges(default_part_range, "in", instructions)
-    assert passing_ranges == [{'x': [1, 4000], 'm': [1, 4000], 'a': [1, 4000], 's': [1, 1350]}, {'x': [1, 4000], 'm': [1, 4000], 'a': [1, 4000], 's': [1351, 4000]}]
-
-def count_range(a, b):
-    return a * b 
-
-def tests():
-    #test_1()
-    #test_2()
-    #test_3()
-    pass
+    return (instructions, ratings)
 
 
-def main():
-    with open("inputs/19.txt") as f:
-        raw_instructions, _ = f.read().split("\n\n")
-    instructions = get_instructions(raw_instructions)
-    append_passing_ranges(default_part_range, "in", instructions)
-    
-    total_count = 0
-    ranges = [[range[1] - range[0] + 1 for range in range_dict.values()] for range_dict in passing_ranges]
-    for range in ranges:
-        total_count += reduce(lambda a, b: a * b, range)
-    print(total_count)
-    #163 494 853 788 000
-    #167 409 079 868 000
-main()
+def part_one():
+    lines = read_lines_to_list()
+    answer = 0
+
+    (instructions, ratings) = parse(lines)
+
+    for rating in ratings:
+        curr = "in"
+        while curr not in ["A", "R"]:
+            rules = instructions[curr]
+            for r in rules:
+                if len(r) == 1:
+                    curr = r[0]
+                    break
+                else:
+                    (var, condition, value) = r[0]
+                    result = r[1]
+
+                    if condition == ">":
+                        if rating[var] > value:
+                            curr = result
+                            break
+                    else:
+                        if rating[var] < value:
+                            curr = result
+                            break
+
+        if curr == "A":
+            answer += sum(rating.values())
+
+    print(f"Part 1: {answer}")
+
+
+def range_size(range):
+    result = 1
+    for val in range.values():
+        result *= 1 + val[1] - val[0]
+    return result
+
+
+def solve(instructions, range, curr: str):
+    parts = instructions[curr]
+    val = 0
+
+    for part in parts:
+        if len(part) == 1:
+            if part[0] == "A":
+                val += range_size(range)
+            elif part[0] != "R":
+                val += solve(instructions, range, part[0])
+        else:
+            (var, cond, amount) = part[0]
+            destination = part[1]
+
+            range_var = range[var]
+
+            if cond == ">":
+                if range_var[1] > amount:
+                    range_copy = deepcopy(range)
+                    range_copy[var] = (max(range_var[0], amount + 1), range_var[1])
+
+                    if destination == "A":
+                        val += range_size(range_copy)
+                    elif destination != "R":
+                        val += solve(instructions, range_copy, destination)
+
+                # continue search as if it failed
+                range[var] = (range_var[0], amount)
+            else:
+                if range_var[0] < amount:
+                    range_copy = deepcopy(range)
+                    range_copy[var] = (range_var[0], min(range_var[1], amount - 1))
+
+                    if destination == "A":
+                        val += range_size(range_copy)
+                    elif destination != "R":
+                        val += solve(instructions, range_copy, destination)
+
+                # continue search as if it failed
+                range[var] = (amount, range_var[1])
+
+    return val
+
+
+def part_two():
+    lines = read_lines_to_list()
+
+    (instructions, _) = parse(lines)
+    range = {}
+    for val in "xmas":
+        range[val] = (1, 4000)
+    answer = solve(instructions, range, "in")
+
+    print(f"Part 2: {answer}")
+
+
+part_one()
+part_two()

@@ -3,15 +3,18 @@ all_nodes = {}
 class Node:
     def __init__(self):
         self.signal = False # False = low, True = high
-        self.incoming_signal = False
+        self.incoming_signal = None
         self.incoming_signal_source = None
         self.signals_sent = {True: 0, False: 0}
-        self.all_nodes = all_nodes # stupid
 
     def send_signals_and_return_receiving(self):
         # Need for instance
         for node_name in self.output_node_names:
-            node = self.all_nodes[node_name]
+            if node_name not in all_nodes.keys():
+                # E.g., output node doesn't exist
+                print(f"{node_name} doesn't exist!")
+                continue
+            node = all_nodes[node_name]
             node.incoming_signal = self.signal
             node.incoming_signal_source = self.name
             node.process_incoming_signals()
@@ -24,6 +27,9 @@ class Broadcaster(Node):
         super().__init__()
         self.name = name
         self.output_node_names = output_node_names
+    
+    def process_incoming_signals(self):
+        pass
 
 
 class FlipFlop(Node):
@@ -85,22 +91,29 @@ class Conjunction(Node):
 
 
 class SignalProcessor:
-    def __init__(self):
-        self.all_nodes = {}
-    
-    # Remember the button press is 1!
-    # How does this terminate?
     def process_all_signals():
-        broadcaster = Broadcaster("broadcaster", [])
-        nodes_with_signals_to_send = [broadcaster]
-        while nodes_with_signals_to_send:
-            for next_node in nodes_with_signals_to_send:
-                next_node.send_signals_and_return_receiving()
-                nodes_with_signals_to_send.append(next_node.output_node_names)
+        node_names_with_signals_to_send = ["broadcaster"]
+        all_nodes["broadcaster"].signals_sent[False] += 1 #button press
+        while node_names_with_signals_to_send:
+            next_node_name = node_names_with_signals_to_send.pop(0)
+            if next_node_name not in all_nodes.keys():
+                print(f"{next_node_name} doesn't exist")
+                continue
+            all_nodes[next_node_name].process_incoming_signals()
+            nodes_names_receiving_signals = all_nodes[next_node_name].send_signals_and_return_receiving()
+            # Why does b not send anything to c?
+            for new_node_name in nodes_names_receiving_signals:
+                node_names_with_signals_to_send.append(new_node_name)
+        # Remember the button press is 1!
+
+    def count_signals_sent():
+        low_sent = sum([node.signals_sent[0] for node in all_nodes.values()]) # 8
+        high_sent = sum([node.signals_sent[1] for node in all_nodes.values()]) # 4
+        return low_sent * high_sent
 
 def get_name_and_nodes(row):
     name, other = row.split("-")
-    name = name[1:].strip()
+    name = name.strip()
     nodes = other[1:].split(",")
     nodes = [node.strip() for node in nodes]
     return name, nodes
@@ -109,22 +122,26 @@ with open("inputs/20.txt") as f:
     data = f.readlines()
     for row in data:
         name, node_names = get_name_and_nodes(row)        
-        if "caster" in name:
-            node = Broadcaster(name="broadcaster", output_node_names=node_names)
-        elif "%" in name:
+        if "%" in name:
+            name = name[1:]
             node = FlipFlop(name=name, output_node_names=node_names)
         elif "&" in name:
+            name = name[1:]
             conjunction_input_nodes = []
             for row in data:
                 conj_input_name, conj_input_nodes = get_name_and_nodes(row)
                 if name in conj_input_nodes:
                     conjunction_input_nodes.append(conj_input_name)
             node = Conjunction(name=name, output_node_names=node_names, input_node_names=conjunction_input_nodes)
+        elif "caster" in name:
+            node = Broadcaster(name=name, output_node_names=node_names)
+        else:
+            raise ValueError("No match to other nodes")
         all_nodes[name] = node
 
 
+#for _ in range(1000):
+SignalProcessor.process_all_signals()
 
-
-sp = SignalProcessor()
-#for a, b in sp.all_nodes.items():
-#    print(a, b.name)
+signals_sent = SignalProcessor.count_signals_sent()
+print(signals_sent)

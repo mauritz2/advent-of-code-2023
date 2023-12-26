@@ -1,52 +1,75 @@
+from functools import cache
+
 with open("inputs/day21.txt") as f:
-    data = f.readlines()
-    data = [row.strip() for row in data]
+    grid = f.readlines()
+    grid = [row.strip() for row in grid]
     start_pos = None
-    for i, row in enumerate(data):
+    for i, row in enumerate(grid):
         s_pos = row.find("S")
         if s_pos != -1:
             start_pos = (i, s_pos)
             break
-    data = [[c for c in row] for row in data]
-    data[start_pos[0]][start_pos[1]] = "."
+    grid = [[c for c in row] for row in grid]
+    grid[start_pos[0]][start_pos[1]] = "."
 
 directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
 
-def find_num_locations(start, max_steps, grid):
+# Check fewer locations
+    # Figure out which ones we don't have to compute - e.g., already visisted
+# Check each location faster
+    # More advanced caching, 
+
+def find_num_locations(start, max_steps):
     current_positions = [start]
-    for step_num in range(1, max_steps + 1):
-        new_positions = []
+    all_positions = {(start, 0)}
+    for _ in range(1, max_steps + 1):
+        new_positions = set()
         while current_positions:
             pos = current_positions.pop()
-            # map_x, map_y = pos thing (get mapped coords)
-            # new_locs = dict[(map_y, map_x)]
-            # new_positions.extend(new_locs)
+            new_directions = get_new_directions(pos)
+            new_positions.update(new_directions)
         else:
-            current_positions = new_positions.copy()
+            current_positions = new_positions
     return current_positions
 
-# {(1, 0): [(1, 0), (0, 1)] 
-# How do you deal with the expanding ones?
-# Map the expanding squares to the main dict
-# Coordinates are y, x
-# But we need to find map_y, map_x
-# map_x % len(grid[0])
 
-# for dir in directions:
-#     ny, nx = pos[0] + dir[0], pos[1] + dir[1]
-#     if not (0 <= ny < len(grid)) or not (0 <= nx < len(grid[0])):
-#         continue
-#     if grid[ny][nx] != ".":
-#         continue
-#     if (ny, nx) in new_positions:
-#         continue
+@cache
+def shrink_to_original_map(pos):
+    mapped_y = pos[0] % len(grid)
+    mapped_x = pos[1] % len(grid[0])
+    return mapped_y, mapped_x
 
-locations = find_num_locations(start_pos, 26501365, data)
-print(len(set(locations)))
+@cache
+def get_new_directions(pos):
+    mapped_y, mapped_x = shrink_to_original_map(pos)
+    available_directions = grid_map[(mapped_y, mapped_x)]
+    new_directions = set([(pos[0] + dir[0], pos[1] + dir[1]) for dir in available_directions])
+    return new_directions
 
-#for visited in locations:
-#    data[visited[0]][visited[1]] = "O"
-#for row in data:
-#    print("".join(row))
+def get_grid_map(grid, directions):
+    grid_map = {}
+    for row_num, row in enumerate(grid):
+        for col_num, cell in enumerate(row):
+            if grid[row_num][col_num] == "#":
+                continue
+            possible_directions = []
+            for dir in directions:
+                ny, nx = row_num + dir[0], col_num + dir[1]
+                if (0 <= ny < len(grid)) and (0 <= nx < len(grid[0])):
+                    if grid[ny][nx] != ".":
+                        continue
+                ny_normalized, nx_normalized = ny - row_num, nx - col_num
+                possible_directions.append((ny_normalized, nx_normalized))
+
+            grid_map[(row_num, col_num)] = possible_directions
+    return grid_map
+
+
+grid_map = get_grid_map(grid, directions)
+
+#16 733 044
+
+locations = set(find_num_locations(start_pos, 50))
+print(len(locations))
 
 

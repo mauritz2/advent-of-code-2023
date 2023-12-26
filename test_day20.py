@@ -65,20 +65,24 @@ def test_send_signal_high_energy(flipflop, conjunction):
     flipflop.signal = True
     flipflop.output_nodes = [conjunction]
     conjunction.input_node_states = conjunction.create_node_states_dict(["flip"])
-    flipflop.send_signals()
+    receiving = flipflop.send_signals_and_return_receiving()
     assert conjunction.incoming_signal == True
+    assert len(receiving) == 1
 
 # Node tests
 def test_send_signals_three_times(broadcaster, flipflop):
     broadcaster.output_nodes = [flipflop]
-    broadcaster.send_signals()
+    receiving = broadcaster.send_signals_and_return_receiving()
     assert flipflop.signal == True
+    assert len(receiving) == 1
 
-    broadcaster.send_signals()
+    broadcaster.send_signals_and_return_receiving()
     assert flipflop.signal == False
+    assert len(receiving) == 1
 
-    broadcaster.send_signals()
+    broadcaster.send_signals_and_return_receiving()
     assert flipflop.signal == True
+    assert len(receiving) == 1
 
     assert broadcaster.signals_sent[False] == 3
 
@@ -95,11 +99,12 @@ def test_send_signals_flipflops():
     assert b.signal == False
     assert c.signal == False
 
-    broadcaster.send_signals()
+    receiving = broadcaster.send_signals_and_return_receiving()
 
     assert a.signal == True
     assert b.signal == True
     assert c.signal == True
+    assert len(receiving) == 3
 
 def test_send_signals_conjunction():
     inv = Conjunction("inv", ["a", "b", "c"], [])
@@ -109,21 +114,23 @@ def test_send_signals_conjunction():
 
     assert inv.signal == False
 
-    a.send_signals()
-    b.send_signals()
-    c.send_signals()
+    a_receiving = a.send_signals_and_return_receiving()
+    b_receiving = b.send_signals_and_return_receiving()
+    c_receiving = c.send_signals_and_return_receiving()
     
     assert inv.signal == False
+    assert (len(a_receiving) + len(b_receiving) + len(c_receiving)) == 0
     
     a.signal = True
     b.signal = True
     c.signal = True
-    a.send_signals()
+    a_receiving = a.send_signals_and_return_receiving()
     assert inv.signal == False
-    b.send_signals()
+    b_receiving = b.send_signals_and_return_receiving()
     assert inv.signal == False
-    c.send_signals()
+    c_receiving = c.send_signals_and_return_receiving()
     assert inv.signal == True
+    assert (len(a_receiving) + len(b_receiving) + len(c_receiving)) == 3
 
 
 

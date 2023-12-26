@@ -63,7 +63,8 @@ def test_process_incoming_signals_on_low(flipflop):
     
 def test_send_signal_high_energy(flipflop, conjunction):    
     flipflop.signal = True
-    flipflop.output_nodes = [conjunction]
+    flipflop.output_node_names = ["con"]
+    flipflop.all_nodes = {"con":conjunction}
     conjunction.input_node_states = conjunction.create_node_states_dict(["flip"])
     receiving = flipflop.send_signals_and_return_receiving()
     assert conjunction.incoming_signal == True
@@ -71,7 +72,10 @@ def test_send_signal_high_energy(flipflop, conjunction):
 
 # Node tests
 def test_send_signals_three_times(broadcaster, flipflop):
-    broadcaster.output_nodes = [flipflop]
+    
+    broadcaster.output_node_names = ["flip"]
+    broadcaster.output_node_names = ["flip"]
+    broadcaster.all_nodes = {"flip":flipflop}
     receiving = broadcaster.send_signals_and_return_receiving()
     assert flipflop.signal == True
     assert len(receiving) == 1
@@ -90,11 +94,11 @@ def test_send_signals_flipflops():
     a = FlipFlop("a", [])
     b = FlipFlop("b", [])
     c = FlipFlop("c", [])
-    a.output_nodes = [b]
-    b.output_nodes = [c]
-    c.output_nodes = []
-    broadcaster = Broadcaster("broadcaster", [a, b, c])
-
+    a.output_node_names = ["b"]
+    b.output_node_names = ["c"]
+    c.output_node_names = []
+    broadcaster = Broadcaster("broadcaster", ["a", "b", "c"])
+    broadcaster.all_nodes = {"a":a, "b":b, "c":c}
     assert a.signal == False
     assert b.signal == False
     assert c.signal == False
@@ -108,9 +112,13 @@ def test_send_signals_flipflops():
 
 def test_send_signals_conjunction():
     inv = Conjunction("inv", ["a", "b", "c"], [])
-    a = FlipFlop("a", [inv])
-    b = FlipFlop("b", [inv])
-    c = FlipFlop("c", [inv])
+    a = FlipFlop("a", ["inv"])
+    b = FlipFlop("b", ["inv"])
+    c = FlipFlop("c", ["inv"])
+
+    a.all_nodes = {"inv":inv}
+    b.all_nodes = {"inv":inv}
+    c.all_nodes = {"inv":inv}
 
     assert inv.signal == False
 

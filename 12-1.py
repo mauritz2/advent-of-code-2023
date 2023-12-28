@@ -1,6 +1,6 @@
 
 
-with open("day-12-data.txt") as f:
+with open("inputs/day-12-data.txt") as f:
     records, num_arrangements = zip(*[row.strip().split() for row in f])
     
     num_arrangements = [list(map(int, row.split(","))) for row in num_arrangements]
@@ -8,7 +8,6 @@ with open("day-12-data.txt") as f:
 OPTIONS = ["#", "."]
 
 def calc_possible_arrangements(record:str, answer:list[int]):
-    print(re)
     def count_segments(s):
         return [len(seg) for seg in s.split('.') if seg]
 

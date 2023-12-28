@@ -1,6 +1,6 @@
 # From /u/atrocia6
 ways = 0
-for row in open("day-12-data.txt"):
+for row in open("inputs/day-12-data.txt"):
     record, checksum = row.split()
     checksum = [int(n) for n in checksum.split(',')]
     record = '?'.join([record for i in range(5)])

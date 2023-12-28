@@ -2,7 +2,6 @@
 with open("inputs/23.txt") as f:
     data = f.read().strip().splitlines()
 
-# Part 2
 edges = {}  # (r, c) -> (ar, ac, length)
 for r, row in enumerate(data):
     for c, tile in enumerate(row):
@@ -15,10 +14,10 @@ for r, row in enumerate(data):
                     edges.setdefault((r, c), set()).add((ar, ac, 1))
                     edges.setdefault((ar, ac), set()).add((r, c, 1))
 
-# Remove nodes with degree 2 by merging the edges
 while True:
     for n, e in edges.items():
         if len(e) == 2:
+            # Where n has two neighbors a,b -> remove n and make a and b neighbors instead
             a, b = e
             edges[a[:2]].remove(n + (a[2],))
             edges[b[:2]].remove(n + (b[2],))
@@ -29,23 +28,26 @@ while True:
     else:
         break
 
-n, m = len(data), len(data[0])
+row_len, col_len = len(data), len(data[0])
 
-q = [(0, 1, 0)]
-visited = set()
+start_pos = (0, 1, 0)
+end_pos = (row_len - 1, col_len - 2)
+queue = [start_pos]
+visisted = set()
 best = 0
-while q:
-    r, c, d = q.pop()
+while queue:
+    r, c, d = queue.pop()
     if d == -1:
-        visited.remove((r, c))
+        visisted.remove((r, c))
         continue
-    if (r, c) == (n - 1, m - 2):
+    if (r, c) == end_pos:
         best = max(best, d)
         continue
-    if (r, c) in visited:
+    if (r, c) in visisted:
         continue
-    visited.add((r, c))
-    q.append((r, c, -1))
+    visisted.add((r, c))
+    queue.append((r, c, -1))
     for ar, ac, l in edges[(r, c)]:
-        q.append((ar, ac, d + l))
+        queue.append((ar, ac, d + l))
+
 print(best)
